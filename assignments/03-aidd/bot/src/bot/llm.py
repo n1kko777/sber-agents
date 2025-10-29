@@ -1,4 +1,4 @@
-from typing import Iterable
+from typing import Iterable, List, Tuple
 
 from openai import AsyncOpenAI
 
@@ -10,6 +10,9 @@ SYSTEM_PROMPT = (
 )
 
 
+Message = Tuple[str, str]
+
+
 class TutorLLM:
     def __init__(self, settings: Settings) -> None:
         self._client = AsyncOpenAI(
@@ -18,13 +21,15 @@ class TutorLLM:
         )
         self._model = settings.openrouter_model
 
-    async def reply(self, user_message: str) -> str:
+    async def reply(self, user_message: str, history: List[Message]) -> str:
+        payload = [{"role": "system", "content": SYSTEM_PROMPT}]
+        for role, text in history:
+            payload.append({"role": role, "content": text})
+        payload.append({"role": "user", "content": user_message})
+
         response = await self._client.responses.create(
             model=self._model,
-            input=[
-                {"role": "system", "content": SYSTEM_PROMPT},
-                {"role": "user", "content": user_message},
-            ],
+            input=payload,
         )
         return self._extract_text(response.output) or "I'm still thinking about that."
 
