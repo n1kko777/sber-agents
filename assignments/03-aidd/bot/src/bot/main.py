@@ -17,9 +17,13 @@ HELP_MESSAGE = "Ask questions about grammar, vocabulary, or practice dialogues."
 
 
 async def main() -> None:
-    logging.basicConfig(level=logging.INFO)
-
     settings = Settings.from_env()
+    logging.basicConfig(
+        level=settings.log_level,
+        format="%(asctime)s %(levelname)s %(name)s: %(message)s",
+    )
+    logger = logging.getLogger("bot.main")
+
     bot = Bot(token=settings.telegram_token, parse_mode=ParseMode.HTML)
     dp = Dispatcher()
 
@@ -49,16 +53,23 @@ async def main() -> None:
             memory.add(user_id, "user", user_text)
             memory.add(user_id, "assistant", reply)
         except Exception:
+            logger.exception("LLM request failed")
             memory.add(user_id, "user", user_text)
             reply = FALLBACK_REPLY
         await message.answer(reply)
 
-    logging.info("Starting polling")
+    logger.info(
+        "Starting polling",
+        extra={
+            "openrouter_model": settings.openrouter_model,
+            "context_limit": memory.limit,
+        },
+    )
 
     try:
         await dp.start_polling(bot)
     except (KeyboardInterrupt, asyncio.CancelledError):
-        logging.info("Bot shutdown requested")
+        logger.info("Bot shutdown requested")
     finally:
         await bot.session.close()
 

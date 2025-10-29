@@ -22,3 +22,7 @@ class InMemoryDialogStore:
 
     def reset(self, user_id: int) -> None:
         self._dialogs.pop(user_id, None)
+
+    @property
+    def limit(self) -> int:
+        return self._limit
