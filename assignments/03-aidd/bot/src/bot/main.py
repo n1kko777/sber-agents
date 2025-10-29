@@ -1,22 +1,27 @@
 import asyncio
-import os
-
 from aiogram import Bot, Dispatcher, F, types
 from aiogram.enums import ParseMode
 
-FIXED_REPLY = "Hello! I'm your English tutor bot prototype."
+from .config import Settings
+from .llm import TutorLLM
 
-
-async def handle_message(message: types.Message) -> None:
-    await message.answer(FIXED_REPLY)
+FALLBACK_REPLY = "Sorry, I had trouble answering. Please try again."
 
 
 async def main() -> None:
-    token = os.environ["TELEGRAM_BOT_TOKEN"]
-    bot = Bot(token=token, parse_mode=ParseMode.HTML)
+    settings = Settings.from_env()
+    bot = Bot(token=settings.telegram_token, parse_mode=ParseMode.HTML)
     dp = Dispatcher()
 
-    dp.message.register(handle_message, F.text)
+    llm = TutorLLM(settings=settings)
+
+    @dp.message(F.text)
+    async def handle_message(message: types.Message) -> None:
+        try:
+            reply = await llm.reply(message.text or "")
+        except Exception:
+            reply = FALLBACK_REPLY
+        await message.answer(reply)
 
     await dp.start_polling(bot)
 
