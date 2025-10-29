@@ -6,7 +6,7 @@ from typing import Dict
 TELEGRAM_TOKEN_ENV = "TELEGRAM_BOT_TOKEN"
 OPENROUTER_KEY_ENV = "OPENROUTER_API_KEY"
 OPENROUTER_MODEL_ENV = "OPENROUTER_MODEL"
-DEFAULT_OPENROUTER_MODEL = "openrouter/anthropic/claude-3.5-sonnet"
+DEFAULT_OPENROUTER_MODEL = "openai/gpt-oss-20b:free"
 
 
 @dataclass

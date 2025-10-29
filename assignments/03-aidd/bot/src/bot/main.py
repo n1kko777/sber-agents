@@ -1,6 +1,7 @@
 import asyncio
 import logging
 from aiogram import Bot, Dispatcher, F, types
+from aiogram.client.default import DefaultBotProperties
 from aiogram.enums import ParseMode
 from aiogram.filters import Command
 
@@ -24,7 +25,10 @@ async def main() -> None:
     )
     logger = logging.getLogger("bot.main")
 
-    bot = Bot(token=settings.telegram_token, parse_mode=ParseMode.HTML)
+    bot = Bot(
+        token=settings.telegram_token,
+        default=DefaultBotProperties(parse_mode=ParseMode.HTML),
+    )
     dp = Dispatcher()
 
     llm = TutorLLM(settings=settings)
