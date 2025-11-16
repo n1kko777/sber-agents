@@ -1,0 +1,21 @@
+[project]
+name = "telegram-llm-bot"
+version = "0.1.0"
+description = "Simple Telegram bot with LLM integration"
+requires-python = ">=3.11"
+dependencies = [
+    "aiogram>=3.15.0",
+    "openai>=1.54.0",
+    "python-dotenv>=1.0.0",
+    "langchain>=0.3.0",
+    "langchain-openai>=0.2.0",
+    "langchain-community>=0.3.0",
+    "langchain-core>=0.3.0",
+    "langchain-text-splitters>=0.3.0",
+    "pypdf>=5.0.0",
+    "langsmith>=0.1.0",
+    "jq>=1.0.0",
+    "ragas>=0.2.0",
+    "datasets>=3.0.0",
+]
+
