@@ -3,6 +3,7 @@ from langchain_core.prompts import ChatPromptTemplate, MessagesPlaceholder
 from langchain_core.output_parsers import StrOutputParser
 from langchain_core.runnables import RunnablePassthrough
 from langchain_openai import ChatOpenAI
+from langchain_core.messages import HumanMessage, AIMessage
 from config import config
 
 logger = logging.getLogger(__name__)
@@ -93,10 +94,13 @@ def _load_prompts():
         conversation_system_text = config.load_prompt(config.CONVERSATION_SYSTEM_PROMPT_FILE)
         query_transform_text = config.load_prompt(config.QUERY_TRANSFORM_PROMPT_FILE)
         
-        _conversational_answering_prompt = ChatPromptTemplate(
+        _conversational_answering_prompt = ChatPromptTemplate.from_messages(
             [
                 ("system", conversation_system_text),
-                ("placeholder", "{messages}")
+                (
+                    "human",
+                    "История диалога (может быть пустой):\n{history}\n\nВопрос: {question}\n\nОтветь, используя только информацию из контекста."
+                ),
             ]
         )
         
@@ -123,7 +127,7 @@ def _get_llm_query_transform():
     if _llm_query_transform is None:
         _llm_query_transform = ChatOpenAI(
             model=config.MODEL_QUERY_TRANSFORM,
-            temperature=0.4
+            temperature=0.0
         )
         logger.info(f"Query transform LLM initialized: {config.MODEL_QUERY_TRANSFORM}")
     return _llm_query_transform
@@ -134,10 +138,33 @@ def _get_llm():
     if _llm is None:
         _llm = ChatOpenAI(
             model=config.MODEL,
-            temperature=0.9
+            temperature=0.0
         )
         logger.info(f"Main LLM initialized: {config.MODEL}")
     return _llm
+
+def _extract_last_user_question(messages):
+    """Достаем последний вопрос пользователя, чтобы явно передать его в промпт"""
+    for message in reversed(messages):
+        if isinstance(message, HumanMessage):
+            return message.content
+    return messages[-1].content if messages else ""
+
+def _format_history(messages):
+    """Форматируем историю диалога без последнего вопроса"""
+    if len(messages) <= 1:
+        return "—"
+    
+    history_parts = []
+    for msg in messages[:-1]:
+        if isinstance(msg, HumanMessage):
+            role = "Пользователь"
+        elif isinstance(msg, AIMessage):
+            role = "Ассистент"
+        else:
+            role = "Система"
+        history_parts.append(f"{role}: {msg.content}")
+    return "\n".join(history_parts) if history_parts else "—"
 
 def get_retrieval_query_transformation_chain():
     """Цепочка трансформации запроса"""
@@ -154,21 +181,20 @@ def get_rag_chain():
         raise ValueError("Retriever not initialized")
     
     conversational_answering_prompt, _ = _load_prompts()
+    answer_chain = conversational_answering_prompt | _get_llm() | StrOutputParser()
     
     # LCEL цепочка в стиле из референсного ноутбука
-    # Шаг 1: Получаем documents через query transformation
     return (
         RunnablePassthrough.assign(
             documents=get_retrieval_query_transformation_chain() | retriever
         )
-        # Шаг 2: Генерируем ответ на основе documents
         | RunnablePassthrough.assign(
-            answer=lambda x: (conversational_answering_prompt | _get_llm() | StrOutputParser()).invoke({
+            answer=lambda x: answer_chain.invoke({
                 "context": format_chunks(x["documents"]),
-                "messages": x["messages"]
+                "question": _extract_last_user_question(x["messages"]),
+                "history": _format_history(x["messages"]),
             })
         )
-        # Шаг 3: Возвращаем только answer и documents
         | (lambda x: {"answer": x["answer"], "documents": x["documents"]})
     )
 
@@ -197,4 +223,3 @@ def get_vector_store_stats():
     
     doc_count = len(vector_store.store) if hasattr(vector_store, 'store') else 0
     return {"status": "initialized", "count": doc_count}
-

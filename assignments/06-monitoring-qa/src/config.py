@@ -15,7 +15,7 @@ class Config:
     PROMPTS_DIR = os.getenv("PROMPTS_DIR", "prompts")
     CONVERSATION_SYSTEM_PROMPT_FILE = os.getenv("CONVERSATION_SYSTEM_PROMPT_FILE", "conversation_system.txt")
     QUERY_TRANSFORM_PROMPT_FILE = os.getenv("QUERY_TRANSFORM_PROMPT_FILE", "query_transform.txt")
-    RETRIEVER_K = int(os.getenv("RETRIEVER_K", "3"))
+    RETRIEVER_K = int(os.getenv("RETRIEVER_K", "4"))
     SYSTEM_PROMPT = os.getenv("SYSTEM_PROMPT")
     
     # Отображение источников
@@ -40,4 +40,3 @@ class Config:
         return prompt_path.read_text(encoding='utf-8')
 
 config = Config()
-
