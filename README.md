@@ -40,7 +40,7 @@
 │   ├── 05-rag-langchain/
 │   ├── 06-monitoring-qa/
 │   ├── 07-advanced-rag//
-│   ├── t08_agent_patterns/
+│   ├── 08-agents-langgraph/
 │   ├── t09_langgraph/
 │   ├── t10_mcp_tools/
 │   ├── t11_security/
